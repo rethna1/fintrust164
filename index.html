@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FinTrust 8-4-3 SIP Growth Calculator</title>
+<title>FinTrust 8-4-3 Lump Sum Growth Calculator</title>
 
 <style>
 body{
@@ -56,11 +56,10 @@ button{
   background:#25D366;
 }
 
-/* TABLE SCROLL FIX */
+/* TABLE */
 .table-wrapper{
   width:100%;
   overflow-x:auto;
-  -webkit-overflow-scrolling: touch;
   margin-top:15px;
 }
 
@@ -106,15 +105,12 @@ th{
 </head>
 <body>
 
-<h2>FinTrust 8-4-3 SIP Growth Calculator</h2>
+<h2>FinTrust 8-4-3 Lump Sum Growth Calculator</h2>
 
 <div class="card">
 
-<label>Monthly SIP (₹)</label>
-<input type="number" id="sipAmount" value="10000">
-
-<label>Step-Up % Per Year (Optional)</label>
-<input type="number" id="stepUp" value="0">
+<label>Lump Sum Investment (₹)</label>
+<input type="number" id="lumpAmount" value="500000">
 
 <label>Expected Annual Return (%)</label>
 <input type="number" id="returnRate" value="12">
@@ -122,7 +118,7 @@ th{
 <label>Total Years</label>
 <input type="number" id="totalYears" value="15">
 
-<button onclick="calculateSIP()">Calculate Growth</button>
+<button onclick="calculateLump()">Calculate Growth</button>
 <button class="share-btn" onclick="shareWhatsApp()">Share via WhatsApp</button>
 
 </div>
@@ -150,40 +146,14 @@ function formatCurrency(num){
   return "₹ " + Math.round(num).toLocaleString("en-IN");
 }
 
-function calculateStepUpFutureValue(sip, rate, years, stepUp){
+function calculateLump(){
 
-  let monthlyRate = rate/100/12;
-  let totalValue = 0;
-  let currentSip = sip;
-
-  for(let y=1;y<=years;y++){
-
-    let yearlyValue;
-
-    if(monthlyRate === 0){
-      yearlyValue = currentSip * 12;
-    } else {
-      yearlyValue = currentSip *
-        ((Math.pow(1+monthlyRate,12)-1)/monthlyRate) *
-        Math.pow(1+monthlyRate,(years-y)*12);
-    }
-
-    totalValue += yearlyValue;
-    currentSip = currentSip * (1 + stepUp/100);
-  }
-
-  return totalValue;
-}
-
-function calculateSIP(){
-
-  let sip = parseFloat(document.getElementById("sipAmount").value) || 0;
+  let amount = parseFloat(document.getElementById("lumpAmount").value) || 0;
   let rate = parseFloat(document.getElementById("returnRate").value) || 0;
   let years = parseFloat(document.getElementById("totalYears").value) || 0;
-  let stepUp = parseFloat(document.getElementById("stepUp").value) || 0;
 
-  if(sip<=0 || years<=0){
-    alert("Please enter valid SIP and Years.");
+  if(amount<=0 || years<=0){
+    alert("Please enter valid Amount and Years.");
     return;
   }
 
@@ -198,26 +168,15 @@ function calculateSIP(){
 
   let cumulativeYears=0;
 
-  let finalValue = calculateStepUpFutureValue(sip,rate,years,stepUp);
+  let finalValue = amount*Math.pow((1+rate/100),years);
 
   for(let i=0;i<3;i++){
 
     let proportionalYears = (phaseYears[i]/totalPhaseYears)*years;
     cumulativeYears += proportionalYears;
 
-    let investedSIP = 0;
-    let tempSip = sip;
-
-    for(let y=1;y<=Math.floor(cumulativeYears);y++){
-      investedSIP += tempSip*12;
-      tempSip = tempSip*(1+stepUp/100);
-    }
-
-    let invested = investedSIP;
-
-    let value = calculateStepUpFutureValue(sip,rate,cumulativeYears,stepUp);
-
-    let growth = value - invested;
+    let value = amount*Math.pow((1+rate/100),cumulativeYears);
+    let growth = value - amount;
 
     let phaseName = i==0?"Phase 1 – Patience":
                     i==1?"Phase 2 – Momentum":
@@ -229,7 +188,7 @@ function calculateSIP(){
       <tr class="${rowClass}">
         <td>${phaseName}</td>
         <td>${cumulativeYears.toFixed(1)}</td>
-        <td>${formatCurrency(invested)}</td>
+        <td>${formatCurrency(amount)}</td>
         <td>${formatCurrency(value)}</td>
         <td>${formatCurrency(growth)}</td>
       </tr>
@@ -248,10 +207,9 @@ function calculateSIP(){
 
 function shareWhatsApp(){
 
-  let sip = parseFloat(document.getElementById("sipAmount").value) || 0;
+  let amount = parseFloat(document.getElementById("lumpAmount").value) || 0;
   let rate = parseFloat(document.getElementById("returnRate").value) || 0;
   let years = parseFloat(document.getElementById("totalYears").value) || 0;
-  let stepUp = parseFloat(document.getElementById("stepUp").value) || 0;
 
   function formatINR(num){
     return Math.round(num).toLocaleString("en-IN");
@@ -268,17 +226,7 @@ function shareWhatsApp(){
     let phaseYears = (phaseRatio[i]/totalRatio)*years;
     cumulativeYears += phaseYears;
 
-    // Calculate value till this phase
-    let value = calculateStepUpFutureValue(sip,rate,cumulativeYears,stepUp);
-
-    // Calculate invested till this phase
-    let invested = 0;
-    let tempSip = sip;
-
-    for(let y=1;y<=Math.floor(cumulativeYears);y++){
-      invested += tempSip*12;
-      tempSip = tempSip*(1+stepUp/100);
-    }
+    let value = amount*Math.pow((1+rate/100),cumulativeYears);
 
     let phaseName = i==0?"Phase 1 (Patience)":
                     i==1?"Phase 2 (Momentum)":
@@ -286,38 +234,28 @@ function shareWhatsApp(){
 
     phaseDetails +=
       phaseName + " - After " + cumulativeYears.toFixed(1) + " Years\n" +
-      "Invested: Rs " + formatINR(invested) + "\n" +
+      "Invested: Rs " + formatINR(amount) + "\n" +
       "Value: Rs " + formatINR(value) + "\n\n";
   }
 
-  let finalValue = calculateStepUpFutureValue(sip,rate,years,stepUp);
-
-  let totalInvested = 0;
-  let tempSip = sip;
-  for(let y=1;y<=years;y++){
-    totalInvested += tempSip*12;
-    tempSip = tempSip*(1+stepUp/100);
-  }
-
-  let totalGrowth = finalValue - totalInvested;
+  let finalValue = amount*Math.pow((1+rate/100),years);
+  let totalGrowth = finalValue - amount;
 
   let message =
-"FinTrust 8-4-3 Wealth Projection\n\n" +
-"Monthly SIP: Rs " + formatINR(sip) + "\n" +
-"Step-Up: " + stepUp + "%\n" +
+"FinTrust 8-4-3 Lump Sum Projection\n\n" +
+"Investment: Rs " + formatINR(amount) + "\n" +
 "Return: " + rate + "%\n" +
 "Duration: " + years + " Years\n\n" +
 phaseDetails +
-"Total Invested: Rs " + formatINR(totalInvested) + "\n" +
 "Final Value: Rs " + formatINR(finalValue) + "\n" +
 "Total Growth: Rs " + formatINR(totalGrowth) + "\n\n" +
-"Power of staying invested 💰";
+"Power of compounding 💰";
 
   let url = "https://wa.me/?text=" + encodeURIComponent(message);
   window.open(url,"_blank");
 }
 
-calculateSIP();
+calculateLump();
 
 </script>
 
